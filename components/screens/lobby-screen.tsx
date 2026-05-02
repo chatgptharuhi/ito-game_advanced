@@ -7,19 +7,30 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { GameState, GameRules, DEFAULT_THEMES, MAX_PLAYERS } from '@/lib/game-types'
-import { Users, Settings, Plus, X, Crown } from 'lucide-react'
+import { Users, Settings, Plus, X, Crown, Trash2 } from 'lucide-react'
 
 interface LobbyScreenProps {
   gameState: GameState
   isHost: boolean
   onUpdateRules: (rules: Partial<GameRules>) => void
+  onAddPlayer: (name: string) => void
+  onRemovePlayer: (id: string) => void
   onStartRound: (theme: string) => void
 }
 
-export function LobbyScreen({ gameState, isHost, onUpdateRules, onStartRound }: LobbyScreenProps) {
+export function LobbyScreen({ gameState, isHost, onUpdateRules, onAddPlayer, onRemovePlayer, onStartRound }: LobbyScreenProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [customTheme, setCustomTheme] = useState('')
   const [selectedTheme, setSelectedTheme] = useState('')
+  const [newPlayerName, setNewPlayerName] = useState('')
+
+  const handleAddPlayer = () => {
+    const name = newPlayerName.trim()
+    if (name && players.length < MAX_PLAYERS) {
+      onAddPlayer(name)
+      setNewPlayerName('')
+    }
+  }
   
   const { rules, players, code } = gameState
   const allThemes = [...DEFAULT_THEMES, ...rules.custom_themes]
@@ -95,8 +106,15 @@ export function LobbyScreen({ gameState, isHost, onUpdateRules, onStartRound }: 
                       {player.name.charAt(0)}
                     </div>
                     <span className="font-medium flex-1">{player.name}</span>
-                    {player.is_host && (
+                    {player.is_host ? (
                       <Crown size={18} className="text-amber-500" />
+                    ) : isHost && (
+                      <button
+                        onClick={() => onRemovePlayer(player.id)}
+                        className="p-1 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     )}
                   </motion.div>
                 ))}
@@ -106,6 +124,35 @@ export function LobbyScreen({ gameState, isHost, onUpdateRules, onStartRound }: 
         </Card>
       </motion.div>
       
+      {/* 参加者追加フォーム */}
+      {isHost && players.length < MAX_PLAYERS && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mt-3"
+        >
+          <div className="flex gap-2">
+            <Input
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              placeholder="参加者の名前を入力"
+              className="flex-1 h-12 rounded-xl bg-input border-2"
+              maxLength={12}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddPlayer()}
+            />
+            <Button
+              onClick={handleAddPlayer}
+              disabled={!newPlayerName.trim()}
+              size="icon"
+              className="h-12 w-12 rounded-xl bg-primary"
+            >
+              <Plus size={20} />
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Host Controls */}
       {isHost && (
         <motion.div

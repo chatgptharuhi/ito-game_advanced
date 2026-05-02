@@ -35,9 +35,25 @@ function useDemoMode() {
       round: null,
       players: [
         { id: '1', name, is_host: true, has_described: false, description: null, number: null, is_oni: false },
-        { id: '2', name: 'あかね', is_host: false, has_described: false, description: null, number: null, is_oni: false },
-        { id: '3', name: 'たけし', is_host: false, has_described: false, description: null, number: null, is_oni: false },
       ]
+    })
+  }, [])
+
+  const addPlayer = useCallback((name: string) => {
+    setDemoState(prev => {
+      if (!prev) return null
+      const id = String(Date.now())
+      return {
+        ...prev,
+        players: [...prev.players, { id, name, is_host: false, has_described: false, description: null, number: null, is_oni: false }]
+      }
+    })
+  }, [])
+
+  const removePlayer = useCallback((id: string) => {
+    setDemoState(prev => {
+      if (!prev) return null
+      return { ...prev, players: prev.players.filter(p => p.id !== id) }
     })
   }, [])
   
@@ -209,6 +225,8 @@ function useDemoMode() {
     createDemoRoom,
     joinDemoRoom,
     updateRules,
+    addPlayer,
+    removePlayer,
     startRound,
     startOrdering,
     setOrder,
@@ -265,6 +283,8 @@ function GameContent() {
             gameState={demo.demoState}
             isHost={isHost}
             onUpdateRules={demo.updateRules}
+            onAddPlayer={demo.addPlayer}
+            onRemovePlayer={demo.removePlayer}
             onStartRound={demo.startRound}
           />
         )}
