@@ -82,28 +82,30 @@ function useDemoMode() {
   }, [])
   
   const startRound = useCallback((theme: string) => {
-    const num = Math.floor(Math.random() * (demoState?.rules.num_range || 100)) + 1
-    setMyNumber({ number: num, label: String(num) })
+    const range = demoState?.rules.num_range || 100
     setLastResult(null)
-    
-    setDemoState(prev => prev ? {
-      ...prev,
-      phase: 'describing',
-      current_round: prev.current_round + 1,
-      round: {
-        number: prev.current_round + 1,
-        theme,
-        ordered_ids: [],
-        success: null,
-        score: null
-      },
-      players: prev.players.map(p => ({
-        ...p,
-        has_described: false,
-        description: null,
-        number: null
-      }))
-    } : null)
+
+    setDemoState(prev => {
+      if (!prev) return null
+      const playersWithNumbers = prev.players.map((p, i) => {
+        const num = Math.floor(Math.random() * range) + 1
+        if (i === 0) setMyNumber({ number: num, label: String(num) })
+        return { ...p, has_described: false, description: null, number: num }
+      })
+      return {
+        ...prev,
+        phase: 'describing',
+        current_round: prev.current_round + 1,
+        round: {
+          number: prev.current_round + 1,
+          theme,
+          ordered_ids: [],
+          success: null,
+          score: null
+        },
+        players: playersWithNumbers
+      }
+    })
   }, [demoState?.rules.num_range])
   
   const startOrdering = useCallback(() => {
@@ -125,35 +127,27 @@ function useDemoMode() {
   const score = useCallback(() => {
     setDemoState(prev => {
       if (!prev) return null
-      
-      // Assign random numbers to players for demo
-      const playersWithNumbers = prev.players.map((p, i) => ({
-        ...p,
-        number: 20 + i * 25 + Math.floor(Math.random() * 20)
-      }))
-      
-      // Check if order is correct
+
       const orderedIds = prev.round?.ordered_ids || []
-      const orderedNumbers = orderedIds.map(id => 
-        playersWithNumbers.find(p => p.id === id)?.number || 0
+      const orderedNumbers = orderedIds.map(id =>
+        prev.players.find(p => p.id === id)?.number || 0
       )
-      const isCorrect = orderedNumbers.every((n, i) => 
+      const isCorrect = orderedNumbers.every((n, i) =>
         i === 0 || orderedNumbers[i - 1] <= n
       )
-      
-      const roundScore = isCorrect ? playersWithNumbers.length : 0
+
+      const roundScore = isCorrect ? prev.players.length : 0
       setLastResult({ success: isCorrect, score: roundScore })
-      
+
       return {
         ...prev,
         phase: 'round_end',
         total_score: prev.total_score + roundScore,
-        round: prev.round ? { 
-          ...prev.round, 
-          success: isCorrect, 
-          score: roundScore 
+        round: prev.round ? {
+          ...prev.round,
+          success: isCorrect,
+          score: roundScore
         } : null,
-        players: playersWithNumbers
       }
     })
   }, [])
